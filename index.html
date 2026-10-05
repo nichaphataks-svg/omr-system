@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจกระดาษคำตอบ OMR พร้อม Perspective Correction</title>
+    <title>ระบบตรวจกระดาษคำตอบ OMR (ระบบถ่ายภาพประมวลผล)</title>
     <!-- Tailwind CSS & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script async src="https://docs.opencv.org/4.7.0/opencv.js" onload="onOpenCvReady()"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -18,7 +17,6 @@
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; margin: 0; padding: 0; }
-        
         .bubble { 
             width: 15px; 
             height: 15px; 
@@ -40,7 +38,6 @@
             display: inline-block; 
             background: #fff; 
         }
-
         .fiducial-mark { 
             width: 18px; 
             height: 18px; 
@@ -96,9 +93,9 @@
     <nav class="bg-indigo-900 text-white shadow-md no-print sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
             <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-expand text-2xl text-green-400"></i>
+                <i class="fa-solid fa-camera text-2xl text-green-400"></i>
                 <div>
-                    <h1 class="font-bold text-xl leading-tight">ระบบตรวจกระดาษคำตอบ OMR (ระบบ Perspective Warp)</h1>
+                    <h1 class="font-bold text-xl leading-tight">ระบบตรวจกระดาษคำตอบ OMR (ระบบถ่ายภาพประมวลผล)</h1>
                     <p class="text-xs text-indigo-200" id="opencv-status">กำลังโหลดเอนจินประมวลผลภาพ (OpenCV)...</p>
                 </div>
             </div>
@@ -194,43 +191,39 @@
             </div>
         </div>
 
-        <!-- TAB 3: Vertical Camera Scanner -->
+        <!-- TAB 3: New Capture & Scan Workflow -->
         <div id="tab-scan" class="space-y-4 hidden">
             <div class="bg-white p-6 rounded-xl shadow-md grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 space-y-4">
                     <div class="flex justify-between items-center border-b pb-3">
-                        <span class="font-bold text-base text-indigo-900"><i class="fa-solid fa-camera mr-2 text-green-600"></i>กล้องสแกนแนวตั้ง (ตรวจจับจุดดำ 4 มุม)</span>
+                        <span class="font-bold text-base text-indigo-900"><i class="fa-solid fa-camera mr-2 text-green-600"></i>กล้องสแกนแนวตั้ง (กดถ่ายภาพนิ่งประมวลผล)</span>
                         <div class="flex items-center space-x-2">
                             <span class="text-sm font-bold">เลือกวิชา:</span>
                             <select id="scan-subject-select" class="border rounded-lg p-2 text-sm bg-gray-50 font-bold text-indigo-900"></select>
                         </div>
                     </div>
                     
-                    <div class="relative bg-black rounded-2xl overflow-hidden w-full h-[600px] flex items-center justify-center shadow-2xl border-4 border-indigo-950">
+                    <div class="relative bg-black rounded-2xl overflow-hidden w-full h-[580px] flex items-center justify-center shadow-2xl border-4 border-indigo-950">
                         <video id="webcam-video" autoplay playsinline class="w-full h-full object-cover"></video>
 
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
-                            <div class="scanner-guide-box w-[90%] h-[95%] max-w-[460px] rounded-2xl relative border-4 border-green-400">
-                                <div class="absolute top-3 left-3 bg-green-600 text-white text-xs px-2.5 py-1 rounded-md font-bold shadow">จุดดำมุมซ้ายบน</div>
-                                <div class="absolute top-3 right-3 bg-green-600 text-white text-xs px-2.5 py-1 rounded-md font-bold shadow">จุดดำมุมขวาบน</div>
-                                <div class="absolute bottom-3 left-3 bg-green-600 text-white text-xs px-2.5 py-1 rounded-md font-bold shadow">จุดดำมุมซ้ายล่าง</div>
-                                <div class="absolute bottom-3 right-3 bg-green-600 text-white text-xs px-2.5 py-1 rounded-md font-bold shadow">จุดดำมุมขวาล่าง</div>
+                            <div class="scanner-guide-box w-[88%] h-[92%] max-w-[450px] rounded-2xl relative border-4 border-green-400">
+                                <div class="absolute top-3 left-3 bg-green-600 text-white text-xs px-2.5 py-1 rounded-md font-bold shadow">จัดกระดาษให้อยู่ในกรอบนี้</div>
                             </div>
                         </div>
 
                         <canvas id="scan-canvas" class="hidden"></canvas>
-                        <canvas id="warped-canvas" class="hidden"></canvas>
                     </div>
 
                     <div class="flex gap-4">
-                        <button onclick="startCamera()" class="flex-1 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 text-base shadow"><i class="fa-solid fa-power-off mr-2"></i>เปิดกล้องแนวตั้ง</button>
-                        <button onclick="processOmrScanWithWarp()" id="btn-capture" class="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 text-base shadow hidden"><i class="fa-solid fa-expand mr-2"></i>สแกนตรวจ (ดัดภาพอัตโนมัติ)</button>
+                        <button onclick="startCamera()" class="flex-1 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 text-base shadow"><i class="fa-solid fa-power-off mr-2"></i>เปิดกล้อง</button>
+                        <button onclick="captureAndProcessOMR()" id="btn-capture" class="flex-1 bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 text-base shadow hidden"><i class="fa-solid fa-camera mr-2"></i>ถ่ายภาพและตรวจคะแนน</button>
                     </div>
                 </div>
 
                 <div class="bg-gray-50 p-5 rounded-2xl border flex flex-col justify-between space-y-4 shadow-sm">
                     <div>
-                        <h3 class="font-bold border-b pb-2 text-indigo-900 text-lg"><i class="fa-solid fa-circle-check text-green-500 mr-2"></i>ผลสแกนและภาพที่ดัดแล้ว</h3>
+                        <h3 class="font-bold border-b pb-2 text-indigo-900 text-lg"><i class="fa-solid fa-circle-check text-green-500 mr-2"></i>ผลสแกนและไฮไลท์ตรวจทาน</h3>
                         <div class="mt-4 space-y-3 text-sm">
                             <div class="flex justify-between border-b pb-2"><span>รหัสนักเรียน:</span><span id="res-student-id" class="font-bold font-mono text-indigo-700 text-xl">-</span></div>
                             <div class="flex justify-between border-b pb-2"><span>ชื่อนักเรียน:</span><span id="res-student-name" class="font-bold text-indigo-900 text-base">-</span></div>
@@ -242,7 +235,7 @@
                     </div>
 
                     <div class="border rounded-2xl p-3 bg-white text-center shadow-sm">
-                        <p class="text-xs text-gray-600 font-bold mb-2">ภาพกระดาษหลังดัดตรง (ถูก=เขียว / ผิด=แดง)</p>
+                        <p class="text-xs text-gray-600 font-bold mb-2">ภาพถ่ายที่ตรวจ (ถูก=เขียว / ผิด=แดง)</p>
                         <img id="result-annotated-img" class="w-full max-h-60 object-contain rounded-xl border hidden shadow" />
                     </div>
                 </div>
@@ -271,7 +264,7 @@
 
         function onOpenCvReady() {
             cvReady = true;
-            document.getElementById('opencv-status').innerText = 'ระบบ OpenCV พร้อมประมวลผล Perspective Correction';
+            document.getElementById('opencv-status').innerText = 'ระบบ OpenCV พร้อมประมวลผลการตรวจ';
             document.getElementById('opencv-status').classList.replace('text-indigo-200', 'text-green-300');
         }
 
@@ -295,10 +288,10 @@
 
         function switchSubTab(sub) {
             ['teacher', 'subject', 'student', 'report'].forEach(s => document.getElementById(`subtab-${s}`).classList.add('hidden'));
-            document.getElementById(`subtab-${sub}`).classList.remove('hidden');
+            document.getElementById(`subtab-${s}`).classList.remove('hidden');
         }
 
-        // CRUD Management
+        // CRUD
         function addTeacher() {
             const name = document.getElementById('teacher-name').value.trim();
             const pos = document.getElementById('teacher-pos').value.trim();
@@ -385,71 +378,47 @@
             });
         }
 
-        // *** OpenCV OMR Engine with Perspective Warp ***
-        function processOmrScanWithWarp() {
+        // *** Capture & Process OMR Logic ***
+        function captureAndProcessOMR() {
             const video = document.getElementById('webcam-video');
             const canvas = document.getElementById('scan-canvas');
-            const warpedCanvas = document.getElementById('warped-canvas');
             const ctx = canvas.getContext('2d');
-            const wCtx = warpedCanvas.getContext('2d');
 
-            if (!video.videoWidth) return alert('กรุณาเปิดกล้องก่อนสแกน');
+            if (!video.videoWidth) return alert('กรุณาเปิดกล้องให้อยู่ในสภาพพร้อมถ่ายก่อนครับ');
 
+            // 1. Capture snapshot image to canvas
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const docId = document.getElementById('scan-subject-select').value;
             const subject = subjects.find(s => s.docId === docId);
-            if(!subject) return alert('กรุณาเลือกวิชา');
+            if(!subject) return alert('กรุณาเลือกวิชาก่อนตรวจคะแนน');
 
-            // Set Fixed Warped Sheet Dimension (Standardized 600x850 px)
-            warpedCanvas.width = 600;
-            warpedCanvas.height = 850;
-
+            // 2. OpenCV Thresholding
             let src = cv.imread(canvas);
             let gray = new cv.Mat();
             cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
             cv.threshold(gray, gray, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
 
-            // Warp Perspective Mat Setup
-            let dst = new cv.Mat();
-            let dsize = new cv.Size(600, 850);
+            const w = canvas.width;
+            const h = canvas.height;
 
-            // Warp source and destination points
-            let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-                canvas.width * 0.1, canvas.height * 0.08,
-                canvas.width * 0.9, canvas.height * 0.08,
-                canvas.width * 0.1, canvas.height * 0.92,
-                canvas.width * 0.9, canvas.height * 0.92
-            ]);
-            let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, 600, 0, 0, 850, 600, 850]);
-
-            let M = cv.getPerspectiveTransform(srcTri, dstTri);
-            cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-
-            // Draw warped image into canvas
-            cv.imshow('warped-canvas', dst);
-
-            // Process OMR on Normalized Warped Canvas
-            let warpedGray = new cv.Mat();
-            cv.cvtColor(dst, warpedGray, cv.COLOR_RGBA2GRAY, 0);
-            cv.threshold(warpedGray, warpedGray, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
-
-            // Read Student ID (Fixed Pixel Grid on Warped Image)
+            // 3. Detect 4-Digit Student ID
             let readStudentId = "";
-            const idColsX = [400, 435, 470, 505];
-            const idRowsY = [160, 182, 204, 226, 248, 270, 292, 314, 336, 358];
+            const idColsPct = [0.63, 0.68, 0.73, 0.78]; 
+            const idRowsPct = [0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.32, 0.34, 0.36];
+            const scanRadius = Math.round(w * 0.016);
 
             for (let col = 0; col < 4; col++) {
                 let maxFill = -1;
                 let detectedDigit = 0;
                 for (let row = 0; row < 10; row++) {
-                    let cx = idColsX[col];
-                    let cy = idRowsY[row];
+                    let cx = Math.round(w * idColsPct[col]);
+                    let cy = Math.round(h * idRowsPct[row]);
 
-                    let rect = new cv.Rect(cx - 7, cy - 7, 14, 14);
-                    let roi = warpedGray.roi(rect);
+                    let rect = new cv.Rect(Math.max(0, cx - scanRadius), Math.max(0, cy - scanRadius), scanRadius * 2, scanRadius * 2);
+                    let roi = gray.roi(rect);
                     let fillCount = cv.countNonZero(roi);
                     roi.delete();
 
@@ -461,9 +430,9 @@
                 readStudentId += detectedDigit.toString();
             }
 
-            const matchedStudent = students.find(s => s.id === readStudentId) || { id: readStudentId, name: "ไม่พบชื่อในระบบ (รหัส: " + readStudentId + ")" };
+            const matchedStudent = students.find(s => s.id === readStudentId) || { id: readStudentId, name: "ไม่พบชื่อในระบบ (อ่านได้รหัส: " + readStudentId + ")" };
 
-            // Read Answers Grid & Annotate Result
+            // 4. Detect Answer Bubbles
             let score = 0;
             const qCount = subject.count;
             const answerKeys = subject.keys;
@@ -473,63 +442,62 @@
                 let colGroup = (q < Math.ceil(qCount / 2)) ? 0 : 1;
                 let rowIdx = (q < Math.ceil(qCount / 2)) ? q : q - Math.ceil(qCount / 2);
 
-                let baseX = (colGroup === 0) ? 90 : 340;
-                let baseY = 420 + (rowIdx * 24);
+                let baseX = (colGroup === 0) ? (w * 0.16) : (w * 0.56);
+                let baseY = (h * 0.44) + (rowIdx * (h * 0.026));
 
                 let maxFillChoice = -1;
                 let studentChoice = -1;
 
                 for (let c = 0; c < 4; c++) {
-                    let cx = baseX + (c * 36);
-                    let cy = baseY;
+                    let cx = Math.round(baseX + (c * (w * 0.08)));
+                    let cy = Math.round(baseY);
 
-                    let rect = new cv.Rect(cx - 7, cy - 7, 14, 14);
-                    let roi = warpedGray.roi(rect);
+                    let rect = new cv.Rect(Math.max(0, cx - scanRadius), Math.max(0, cy - scanRadius), scanRadius * 2, scanRadius * 2);
+                    let roi = gray.roi(rect);
                     let fillCount = cv.countNonZero(roi);
                     roi.delete();
 
-                    if (fillCount > maxFillChoice && fillCount > 50) {
+                    if (fillCount > maxFillChoice && fillCount > (scanRadius * scanRadius * 0.5)) {
                         maxFillChoice = fillCount;
                         studentChoice = c;
                     }
                 }
 
-                let correctX = baseX + (correctCol * 36);
+                let correctX = baseX + (correctCol * (w * 0.08));
 
                 if (studentChoice === correctCol) {
                     score++;
-                    wCtx.beginPath();
-                    wCtx.arc(correctX, baseY, 10, 0, 2 * Math.PI);
-                    wCtx.fillStyle = "rgba(34, 197, 94, 0.5)";
-                    wCtx.fill();
-                    wCtx.lineWidth = 3;
-                    wCtx.strokeStyle = "#16a34a";
-                    wCtx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(correctX, baseY, scanRadius + 3, 0, 2 * Math.PI);
+                    ctx.fillStyle = "rgba(34, 197, 94, 0.6)";
+                    ctx.fill();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = "#16a34a";
+                    ctx.stroke();
                 } else {
                     if (studentChoice !== -1) {
-                        let userX = baseX + (studentChoice * 36);
-                        wCtx.beginPath();
-                        wCtx.arc(userX, baseY, 10, 0, 2 * Math.PI);
-                        wCtx.fillStyle = "rgba(239, 68, 68, 0.5)";
-                        wCtx.fill();
-                        wCtx.lineWidth = 3;
-                        wCtx.strokeStyle = "#dc2626";
-                        wCtx.stroke();
+                        let userX = baseX + (studentChoice * (w * 0.08));
+                        ctx.beginPath();
+                        ctx.arc(userX, baseY, scanRadius + 3, 0, 2 * Math.PI);
+                        ctx.fillStyle = "rgba(239, 68, 68, 0.6)";
+                        ctx.fill();
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = "#dc2626";
+                        ctx.stroke();
                     }
 
-                    wCtx.beginPath();
-                    wCtx.arc(correctX, baseY, 10, 0, 2 * Math.PI);
-                    wCtx.lineWidth = 3;
-                    wCtx.strokeStyle = "#22c55e";
-                    wCtx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(correctX, baseY, scanRadius + 3, 0, 2 * Math.PI);
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = "#22c55e";
+                    ctx.stroke();
                 }
             }
 
-            // Cleanup OpenCV memory
-            src.delete(); gray.delete(); dst.delete(); warpedGray.delete(); M.delete(); srcTri.delete(); dstTri.delete();
+            src.delete(); gray.delete();
 
             const scorePercent = Math.round((score / qCount) * 100);
-            const dataUrlImage = warpedCanvas.toDataURL("image/jpeg", 0.85);
+            const dataUrlImage = canvas.toDataURL("image/jpeg", 0.85);
 
             document.getElementById('res-student-id').innerText = matchedStudent.id;
             document.getElementById('res-student-name').innerText = matchedStudent.name;
@@ -552,11 +520,11 @@
                 annotatedImage: dataUrlImage,
                 timestamp: new Date().toLocaleString('th-TH')
             }).then(() => {
-                alert(`✅ ตรวจและบันทึกภาพผลการดัดกระดาษของ ${matchedStudent.name} เรียบร้อยแล้ว!`);
+                alert(`✅ ถ่ายภาพและบันทึกคะแนนของ ${matchedStudent.name} เรียบร้อยแล้ว!`);
             });
         }
 
-        // Report Table
+        // Report
         function renderReportTable() {
             const tbody = document.getElementById('report-table-body');
             tbody.innerHTML = '';
@@ -620,13 +588,8 @@
                     <div class="fiducial-mark fiducial-br"></div>
                     
                     <div>
-                        <div class="flex justify-between items-center mb-2 px-6">
-                            <div id="qrcode-box-${Math.random().toString(36).substr(2, 5)}" class="qrcode-container border p-1 bg-white rounded"></div>
-                            <div class="text-center flex-1">
-                                <div class="font-bold text-base leading-tight">กระดาษคำตอบ OMR</div>
-                                <div class="text-center text-xs font-semibold">โรงเรียน....................................................</div>
-                            </div>
-                        </div>
+                        <div class="text-center font-bold text-base leading-tight">กระดาษคำตอบ OMR</div>
+                        <div class="text-center text-xs font-semibold mb-2">โรงเรียน....................................................</div>
                         
                         <div class="flex justify-between items-start text-xs border-b border-black pb-2 mb-2 gap-2">
                             <div class="space-y-1 flex-1">
@@ -656,24 +619,13 @@
 
                     <div class="text-[9px] text-gray-500 flex justify-between items-center mt-2 pt-1 border-t border-gray-200">
                         <span>คำชี้แจง: ใช้ดินสอดำ 2B ระบายในวงกลมให้เต็มวง</span>
-                        <span class="font-mono">OMR-WARP-P1P6</span>
+                        <span class="font-mono">OMR-SNAP-P1P6</span>
                     </div>
                 </div>
             `;
 
             document.getElementById('ui-preview-container').innerHTML = sheetHTML + sheetHTML;
             document.getElementById('printable-area').innerHTML = `<div class="print-container">${sheetHTML}${sheetHTML}</div>`;
-
-            setTimeout(() => {
-                document.querySelectorAll('.qrcode-container').forEach(el => {
-                    el.innerHTML = '';
-                    new QRCode(el, {
-                        text: JSON.stringify({ code: subjCode, name: subjName }),
-                        width: 50,
-                        height: 50
-                    });
-                });
-            }, 100);
         }
 
         function exportToExcel() {
@@ -691,7 +643,7 @@
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(dataToExport);
             XLSX.utils.book_append_sheet(wb, ws, "คะแนนสอบ");
-            XLSX.writeFile(wb, `รายงานคะแนนสอบ_OMR_Warp.xlsx`);
+            XLSX.writeFile(wb, `รายงานคะแนนสอบ_OMR_Snapshot.xlsx`);
         }
     </script>
 </body>
